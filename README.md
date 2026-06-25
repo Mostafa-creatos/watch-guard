@@ -95,6 +95,17 @@ docker-compose up --build -d
 
 ---
 
+## Neon Production Database Configurations
+For your deployment on Render, use the following Environment Variables corresponding to your Neon database:
+- **`DB_HOST`**: `ep-round-dream-aty08a5t.c-9.us-east-1.aws.neon.tech`
+- **`DB_PORT`**: `5432`
+- **`DB_NAME`**: `neondb`
+- **`DB_USER`**: `neondb_owner`
+- **`DB_PASSWORD`**: `npg_c3khevFQHL0b`
+- **`SPRING_PROFILES_ACTIVE`**: `prod`
+
+---
+
 ## Deploying to GitHub and Vercel
 
 ### 1. Push Code to GitHub
