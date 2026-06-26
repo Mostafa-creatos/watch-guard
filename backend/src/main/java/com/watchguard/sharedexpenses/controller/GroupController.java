@@ -95,4 +95,11 @@ public class GroupController {
         DashboardSummaryDto summary = debtService.calculateGlobalSummary(user, groups);
         return ResponseEntity.ok(summary);
     }
+
+    @PostMapping("/{id}/leave")
+    public ResponseEntity<Void> leaveGroup(@PathVariable Long id) {
+        User user = getAuthenticatedUser();
+        groupService.leaveGroup(id, user);
+        return ResponseEntity.ok().build();
+    }
 }

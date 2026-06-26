@@ -42,6 +42,11 @@ const groupService = {
     return response.data;
   },
 
+  leaveGroup: async (id: number) => {
+    const response = await api.post<void>(`/groups/${id}/leave`);
+    return response.data;
+  },
+
   joinGroup: async (inviteCode: string) => {
     const response = await api.post<Group>('/groups/join', { inviteCode });
     return response.data;

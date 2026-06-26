@@ -23,6 +23,7 @@ import {
   Image,
   FileText,
   Share2,
+  LogOut,
   X
 } from 'lucide-react';
 
@@ -129,6 +130,22 @@ export const GroupDetails: React.FC = () => {
     navigator.clipboard.writeText(group.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!group) return;
+    const myBalance = summary?.memberBalances[user?.id || 0] || 0;
+    if (Math.abs(myBalance) > 0.01) {
+      alert(t('leaveGroupBalanceWarning'));
+      return;
+    }
+    if (!window.confirm(t('confirmLeaveGroup'))) return;
+    try {
+      await groupService.leaveGroup(groupId);
+      navigate('/');
+    } catch (err: any) {
+      alert(err.response?.data || 'Failed to leave group');
+    }
   };
 
   const openReceiptModal = (item: any) => {
@@ -312,6 +329,8 @@ Thank you for using Watch Guard!
       return;
     }
 
+    if (!window.confirm(t('confirmSettleUp'))) return;
+
     setSubmitLoading(true);
     try {
       await expenseService.recordReimbursement(groupId, settleFromUser, settleToUser, amt, settleDate);
@@ -428,6 +447,13 @@ Thank you for using Watch Guard!
             >
               <Users className="w-4 h-4" />
               {t('addMember')}
+            </button>
+            <button
+              onClick={handleLeaveGroup}
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-950/30 text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 font-semibold text-sm transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              {t('leaveGroup')}
             </button>
           </div>
         </div>

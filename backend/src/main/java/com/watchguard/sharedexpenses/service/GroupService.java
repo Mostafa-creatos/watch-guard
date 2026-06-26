@@ -101,4 +101,26 @@ public class GroupService {
         group.getMembers().add(newUser);
         return groupRepository.save(group);
     }
+
+    @Transactional
+    public void leaveGroup(Long groupId, User user) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        if (!group.getMembers().contains(user)) {
+            throw new IllegalArgumentException("You are not a member of this group");
+        }
+
+        group.getMembers().remove(user);
+
+        if (group.getMembers().isEmpty()) {
+            groupRepository.delete(group);
+        } else {
+            String message = String.format("%s left the group '%s'", user.getFullName(), group.getName());
+            for (User member : group.getMembers()) {
+                notificationService.createNotification(member, message, NotificationType.SETTLEMENT_CONFIRMATION, groupId, "GROUP");
+            }
+            groupRepository.save(group);
+        }
+    }
 }
