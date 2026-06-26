@@ -50,7 +50,7 @@ public class Expense {
     @Column(name = "receipt_url")
     private String receiptUrl;
 
-    @Column(name = "is_confirmed", nullable = false)
+    @Column(name = "is_confirmed", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean confirmed = false;
 
