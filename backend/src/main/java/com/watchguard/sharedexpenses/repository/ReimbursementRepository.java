@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface ReimbursementRepository extends JpaRepository<Reimbursement, Long> {
     List<Reimbursement> findByGroupIdOrderByDateDesc(Long groupId);
-    List<Reimbursement> findByGroupInOrderByDateDesc(Collection<Group> groups);
+    List<Reimbursement> findByGroupIdInOrderByDateDesc(Collection<Long> groupIds);
 }

@@ -53,8 +53,9 @@ public class DebtService {
                     .build();
         }
 
-        List<Expense> expenses = expenseRepository.findByGroupInOrderByDateDesc(userGroups);
-        List<Reimbursement> reimbursements = reimbursementRepository.findByGroupInOrderByDateDesc(userGroups);
+        List<Long> groupIds = userGroups.stream().map(Group::getId).collect(Collectors.toList());
+        List<Expense> expenses = expenseRepository.findByGroupIdInOrderByDateDesc(groupIds);
+        List<Reimbursement> reimbursements = reimbursementRepository.findByGroupIdInOrderByDateDesc(groupIds);
 
         // Standardize calculation over all unique members across all user's groups
         Set<User> allMembers = userGroups.stream()

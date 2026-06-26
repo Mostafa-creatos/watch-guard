@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByGroupIdOrderByDateDesc(Long groupId);
-    List<Expense> findByGroupInOrderByDateDesc(Collection<Group> groups);
+    List<Expense> findByGroupIdInOrderByDateDesc(Collection<Long> groupIds);
 }
