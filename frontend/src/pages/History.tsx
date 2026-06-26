@@ -28,6 +28,7 @@ interface CombinedHistoryItem {
   groupId: number;
   groupName: string;
   receiptUrl?: string;
+  confirmed?: boolean;
 }
 
 export const History: React.FC = () => {
@@ -82,7 +83,8 @@ export const History: React.FC = () => {
             category: e.category,
             groupId: group.id,
             groupName: group.name,
-            receiptUrl: e.receiptUrl
+            receiptUrl: e.receiptUrl,
+            confirmed: e.confirmed
           });
         });
 
@@ -90,7 +92,7 @@ export const History: React.FC = () => {
           items.push({
             id: r.id,
             type: 'reimbursement',
-            title: 'Repayment Recorded',
+            title: t('paymentRecorded'),
             description: '',
             amount: r.amount,
             date: r.date,
@@ -98,6 +100,7 @@ export const History: React.FC = () => {
             recipientName: r.toUser.fullName,
             groupId: group.id,
             groupName: group.name,
+            confirmed: r.settled
           });
         });
       });
@@ -196,7 +199,7 @@ export const History: React.FC = () => {
             {t('history')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Complete transaction list. Filter, sort, and search.
+            {t('completeTransactionList')}
           </p>
         </div>
 
@@ -204,7 +207,7 @@ export const History: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-2 text-slate-800 dark:text-slate-255 font-bold text-sm border-b border-slate-100 dark:border-slate-800 pb-3">
             <Filter className="w-4 h-4 text-primary-500" />
-            <span>Filters</span>
+            <span>{t('filters')}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -229,7 +232,7 @@ export const History: React.FC = () => {
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
               >
-                <option value="all">All Groups</option>
+                <option value="all">{t('allGroups')}</option>
                 {groups.map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
@@ -243,7 +246,7 @@ export const History: React.FC = () => {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option value="all">All Categories</option>
+                <option value="all">{t('allCategories')}</option>
                 <option value="food">{t('food')}</option>
                 <option value="transport">{t('transport')}</option>
                 <option value="rent">{t('rent')}</option>
@@ -260,17 +263,17 @@ export const History: React.FC = () => {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="date-desc">Newest First</option>
-                <option value="date-asc">Oldest First</option>
-                <option value="amount-desc">Highest Amount</option>
-                <option value="amount-asc">Lowest Amount</option>
+                <option value="date-desc">{t('newestFirst')}</option>
+                <option value="date-asc">{t('oldestFirst')}</option>
+                <option value="amount-desc">{t('highestAmount')}</option>
+                <option value="amount-asc">{t('lowestAmount')}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase">Start Date</label>
+              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase">{t('startDate')}</label>
               <input
                 type="date"
                 className="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none font-medium"
@@ -279,7 +282,7 @@ export const History: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase">End Date</label>
+              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase">{t('endDate')}</label>
               <input
                 type="date"
                 className="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none font-medium"
@@ -294,7 +297,7 @@ export const History: React.FC = () => {
         <div className="space-y-3">
           {filteredItems.length === 0 ? (
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-500 dark:text-slate-450 text-sm shadow-sm">
-              No matching records found.
+              {t('noMatchingRecords')}
             </div>
           ) : (
             filteredItems.map((item, index) => (
@@ -311,12 +314,19 @@ export const History: React.FC = () => {
                     {item.type === 'expense' ? item.category?.[0].toUpperCase() || 'E' : 'S'}
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-800 dark:text-slate-200">{item.title}</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200">{item.title}</h4>
+                      {!item.confirmed && (
+                        <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                          {t('pendingConfirmation')}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-slate-450 dark:text-slate-500 flex flex-wrap items-center gap-2 mt-1">
                       <span className="font-semibold text-slate-500 dark:text-slate-400">
                         {item.type === 'expense'
-                          ? `${item.payerName} paid`
-                          : `${item.payerName} paid ${item.recipientName}`}
+                          ? `${item.payerName} ${t('paid')}`
+                          : `${item.payerName} ${t('paidUser')} ${item.recipientName}`}
                       </span>
                       <span>•</span>
                       <span className="text-primary-500 font-semibold">{item.groupName}</span>

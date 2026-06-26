@@ -50,6 +50,10 @@ public class Expense {
     @Column(name = "receipt_url")
     private String receiptUrl;
 
+    @Column(name = "is_confirmed", nullable = false)
+    @Builder.Default
+    private boolean confirmed = false;
+
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<ExpenseSplit> splits = new ArrayList<>();

@@ -51,4 +51,22 @@ public class ExpenseController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping("/expenses/{id}/confirm")
+    public ResponseEntity<Expense> confirmExpense(@PathVariable Long id) {
+        User user = getAuthenticatedUser();
+        Expense expense = expenseService.confirmExpense(id, user);
+        return ResponseEntity.ok(expense);
+    }
+
+    @PostMapping("/expenses/{id}/reject")
+    public ResponseEntity<?> rejectExpense(@PathVariable Long id) {
+        try {
+            User user = getAuthenticatedUser();
+            expenseService.rejectExpense(id, user);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import notificationService, { Notification } from '../services/notification.service';
+import expenseService from '../services/expense.service';
 import {
   LayoutDashboard,
   Users,
@@ -56,6 +57,40 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       setUnreadCount(0);
     } catch (err) {
       console.error('Error marking read:', err);
+    }
+  };
+
+  const handleConfirm = async (notification: Notification) => {
+    if (!notification.targetId || !notification.targetType) return;
+    try {
+      if (notification.targetType === 'EXPENSE') {
+        await expenseService.confirmExpense(notification.targetId);
+      } else if (notification.targetType === 'REIMBURSEMENT') {
+        await expenseService.confirmReimbursement(notification.targetId);
+      }
+      
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event('transaction-updated'));
+    } catch (err) {
+      console.error('Failed to confirm transaction:', err);
+    }
+  };
+
+  const handleReject = async (notification: Notification) => {
+    if (!notification.targetId || !notification.targetType) return;
+    try {
+      if (notification.targetType === 'EXPENSE') {
+        await expenseService.rejectExpense(notification.targetId);
+      } else if (notification.targetType === 'REIMBURSEMENT') {
+        await expenseService.rejectReimbursement(notification.targetId);
+      }
+      
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event('transaction-updated'));
+    } catch (err) {
+      console.error('Failed to reject transaction:', err);
     }
   };
 
@@ -252,6 +287,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                             }`}
                           >
                             <p className="text-sm text-slate-800 dark:text-slate-200">{n.message}</p>
+                            {!n.read && n.targetId && n.targetType && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={() => handleConfirm(n)}
+                                  className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                                >
+                                  {t('confirm')}
+                                </button>
+                                <button
+                                  onClick={() => handleReject(n)}
+                                  className="px-2.5 py-1 bg-red-550 hover:bg-red-650 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                                >
+                                  {t('reject')}
+                                </button>
+                              </div>
+                            )}
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                               {new Date(n.createdAt).toLocaleDateString(language, {
                                 hour: '2-digit',

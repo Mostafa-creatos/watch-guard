@@ -45,6 +45,7 @@ public class ExpenseService {
             throw new IllegalArgumentException("Payer is not a member of this group");
         }
 
+        boolean autoConfirm = group.getMembers().size() <= 1;
         Expense expense = Expense.builder()
                 .group(group)
                 .paidBy(paidBy)
@@ -55,6 +56,7 @@ public class ExpenseService {
                 .category(dto.getCategory())
                 .splitType(dto.getSplitType())
                 .receiptUrl(dto.getReceiptUrl())
+                .confirmed(autoConfirm)
                 .build();
 
         List<ExpenseSplit> splits = calculateSplits(expense, dto.getSplits());
@@ -68,7 +70,7 @@ public class ExpenseService {
         
         for (User member : group.getMembers()) {
             if (!member.getId().equals(paidBy.getId())) {
-                notificationService.createNotification(member, message, NotificationType.EXPENSE_ADDED);
+                notificationService.createNotification(member, message, NotificationType.EXPENSE_ADDED, savedExpense.getId(), "EXPENSE");
             }
         }
 
@@ -83,6 +85,43 @@ public class ExpenseService {
         if (!expense.getGroup().getMembers().contains(user)) {
             throw new SecurityException("You do not have access to this expense");
         }
+
+        expenseRepository.delete(expense);
+    }
+
+    @Transactional
+    public Expense confirmExpense(Long expenseId, User user) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+
+        if (!expense.getGroup().getMembers().contains(user)) {
+            throw new SecurityException("You do not have access to this expense");
+        }
+
+        expense.setConfirmed(true);
+        Expense saved = expenseRepository.save(expense);
+
+        // Notify payer
+        String msg = String.format("%s accepted the transaction '%s' of %.2f MAD", 
+                user.getFullName(), expense.getTitle(), expense.getAmount());
+        notificationService.createNotification(expense.getPaidBy(), msg, NotificationType.SETTLEMENT_CONFIRMATION, expenseId, "EXPENSE");
+
+        return saved;
+    }
+
+    @Transactional
+    public void rejectExpense(Long expenseId, User user) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+
+        if (!expense.getGroup().getMembers().contains(user)) {
+            throw new SecurityException("You do not have access to this expense");
+        }
+
+        // Notify payer
+        String msg = String.format("%s rejected the transaction '%s' of %.2f MAD", 
+                user.getFullName(), expense.getTitle(), expense.getAmount());
+        notificationService.createNotification(expense.getPaidBy(), msg, NotificationType.SETTLEMENT_CONFIRMATION, expenseId, "EXPENSE");
 
         expenseRepository.delete(expense);
     }

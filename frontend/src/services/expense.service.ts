@@ -21,6 +21,7 @@ export interface Expense {
   splitType: SplitType;
   receiptUrl?: string;
   splits: ExpenseSplit[];
+  confirmed: boolean;
   createdAt: string;
 }
 
@@ -80,6 +81,24 @@ const expenseService = {
   getGroupReimbursements: async (groupId: number) => {
     const response = await api.get<Reimbursement[]>(`/groups/${groupId}/reimbursements`);
     return response.data;
+  },
+
+  confirmExpense: async (expenseId: number) => {
+    const response = await api.post<Expense>(`/expenses/${expenseId}/confirm`);
+    return response.data;
+  },
+
+  rejectExpense: async (expenseId: number) => {
+    await api.post(`/expenses/${expenseId}/reject`);
+  },
+
+  confirmReimbursement: async (reimbursementId: number) => {
+    const response = await api.post<Reimbursement>(`/reimbursements/${reimbursementId}/confirm`);
+    return response.data;
+  },
+
+  rejectReimbursement: async (reimbursementId: number) => {
+    await api.post(`/reimbursements/${reimbursementId}/reject`);
   },
 };
 

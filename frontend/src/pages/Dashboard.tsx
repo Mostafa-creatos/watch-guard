@@ -52,6 +52,8 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    window.addEventListener('transaction-updated', fetchDashboardData);
+    return () => window.removeEventListener('transaction-updated', fetchDashboardData);
   }, []);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -108,11 +110,11 @@ export const Dashboard: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              Hello, {user?.fullName}!
+              {t('hello')}, {user?.fullName}!
               <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
-              Welcome back to your Watch Guard dashboard.
+              {t('welcomeBack')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -224,9 +226,9 @@ export const Dashboard: React.FC = () => {
             })()}
           </div>
           <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-550 mt-1 font-semibold">
-            <span>OWED TO OTHERS</span>
-            <span>SETTLED</span>
-            <span>OWED TO YOU</span>
+            <span>{t('owedToOthers')}</span>
+            <span>{t('settled')}</span>
+            <span>{t('owedToYou')}</span>
           </div>
         </div>
 
@@ -273,7 +275,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 line-clamp-2">
-                        {group.description || 'No description provided.'}
+                        {group.description || t('noDescription')}
                       </p>
                     </div>
 
@@ -282,7 +284,7 @@ export const Dashboard: React.FC = () => {
                         Code: <code className="font-mono text-slate-650 dark:text-slate-350 bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded font-bold">{group.inviteCode}</code>
                       </span>
                       <span className="text-xs font-semibold text-primary-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                        View Details
+                        {t('viewDetails')}
                         <ChevronRight className="w-4 h-4" />
                       </span>
                     </div>
@@ -322,7 +324,7 @@ export const Dashboard: React.FC = () => {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="What is this group for?"
+                  placeholder={t('whatIsGroupFor')}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm resize-none"
                   value={newGroupDesc}
                   onChange={(e) => setNewGroupDesc(e.target.value)}
@@ -361,12 +363,12 @@ export const Dashboard: React.FC = () => {
             <form onSubmit={handleJoinGroup} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-350 mb-1">
-                  {t('inviteLink')} / Invite Code
+                  {t('inviteLink')} / {t('inviteCodeLabel')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Enter 8-digit code (e.g. A1B2C3D4)"
+                  placeholder={t('enter8digit')}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm uppercase"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}

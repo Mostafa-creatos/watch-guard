@@ -20,7 +20,10 @@ import {
   Copy,
   Check,
   ChevronDown,
-  Image
+  Image,
+  FileText,
+  Share2,
+  X
 } from 'lucide-react';
 
 export const GroupDetails: React.FC = () => {
@@ -43,6 +46,9 @@ export const GroupDetails: React.FC = () => {
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [settleModalOpen, setSettleModalOpen] = useState(false);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Clipboard copies
   const [copied, setCopied] = useState(false);
@@ -114,6 +120,8 @@ export const GroupDetails: React.FC = () => {
 
   useEffect(() => {
     fetchGroupData();
+    window.addEventListener('transaction-updated', fetchGroupData);
+    return () => window.removeEventListener('transaction-updated', fetchGroupData);
   }, [groupId]);
 
   const copyInviteCode = () => {
@@ -121,6 +129,57 @@ export const GroupDetails: React.FC = () => {
     navigator.clipboard.writeText(group.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openReceiptModal = (item: any) => {
+    setSelectedReceipt(item);
+    setReceiptModalOpen(true);
+  };
+
+  const handleShareReceipt = () => {
+    if (!selectedReceipt) return;
+    const shareText = t('shareMsg')
+      .replace('{amount}', selectedReceipt.amount.toFixed(2))
+      .replace('{group}', group?.name || '');
+
+    if (navigator.share) {
+      navigator.share({
+        title: t('reimbursementReceipt'),
+        text: shareText,
+      }).catch(err => console.error('Share error:', err));
+    } else {
+      navigator.clipboard.writeText(shareText);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
+  };
+
+  const handleDownloadReceipt = () => {
+    if (!selectedReceipt) return;
+    const payerName = selectedReceipt.payer;
+    const recipientName = selectedReceipt.recipient || selectedReceipt.recipientName || '';
+    const textContent = `
+=========================================
+           WATCH GUARD RECEIPT
+=========================================
+Receipt ID: WR-${selectedReceipt.id}-${Date.now().toString().slice(-4)}
+Group: ${group?.name}
+Date: ${new Date(selectedReceipt.date).toLocaleDateString(language)}
+Type: Settlement Payment
+Payer: ${payerName}
+Recipient: ${recipientName}
+Amount: ${selectedReceipt.amount.toFixed(2)} MAD
+Status: CONFIRMED & SETTLED
+=========================================
+Thank you for using Watch Guard!
+`;
+    const element = document.createElement("a");
+    const file = new Blob([textContent], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `receipt-${selectedReceipt.id}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -333,7 +392,7 @@ export const GroupDetails: React.FC = () => {
                 <span>{group.inviteCode}</span>
               </button>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 max-w-xl">{group.description || 'No description provided.'}</p>
+            <p className="text-slate-500 dark:text-slate-400 max-w-xl">{group.description || t('noDescription')}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -385,7 +444,7 @@ export const GroupDetails: React.FC = () => {
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
               <Users className="w-5 h-5 text-primary-500" />
-              Member Balances
+              {t('memberBalances')}
             </h3>
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {group.members.map((member) => {
@@ -407,15 +466,15 @@ export const GroupDetails: React.FC = () => {
                     <div className="text-right">
                       {bal > 0 ? (
                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                          Gets back {bal.toFixed(2)} MAD
+                          {t('getsBack')} {bal.toFixed(2)} MAD
                         </span>
                       ) : bal < 0 ? (
                         <span className="text-sm font-bold text-red-650 dark:text-red-400">
-                          Owes {Math.abs(bal).toFixed(2)} MAD
+                          {t('owes')} {Math.abs(bal).toFixed(2)} MAD
                         </span>
                       ) : (
                         <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-                          Settled Up
+                          {t('settledUpLabel')}
                         </span>
                       )}
                     </div>
@@ -430,7 +489,7 @@ export const GroupDetails: React.FC = () => {
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-emerald-500" />
-                Simplified Debts
+                {t('simplifiedDebts')}
               </h3>
 
               {summary.simplifiedDebts.length === 0 ? (
@@ -457,7 +516,7 @@ export const GroupDetails: React.FC = () => {
             {summary.simplifiedDebts.length > 0 && (
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-550 flex items-center gap-1.5">
                 <Info className="w-4 h-4 shrink-0 text-primary-500" />
-                Balances are simplified automatically to minimize transfers.
+                {t('balancesSimplified')}
               </div>
             )}
           </div>
@@ -466,7 +525,7 @@ export const GroupDetails: React.FC = () => {
         {/* History of Expenses & Settlements */}
         <div className="space-y-4">
           <h3 className="font-bold text-xl text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            History
+            {t('history')}
           </h3>
 
           {expenses.length === 0 && reimbursements.length === 0 ? (
@@ -488,6 +547,7 @@ export const GroupDetails: React.FC = () => {
                   category?: string;
                   receiptUrl?: string;
                   detail: string;
+                  confirmed?: boolean;
                 }> = [];
 
                 expenses.forEach(e => {
@@ -500,7 +560,8 @@ export const GroupDetails: React.FC = () => {
                     payer: e.paidBy.fullName,
                     category: e.category,
                     receiptUrl: e.receiptUrl,
-                    detail: `${e.paidBy.fullName} paid ${e.amount.toFixed(2)} MAD`
+                    detail: `${e.paidBy.fullName} ${t('paid')} ${e.amount.toFixed(2)} MAD`,
+                    confirmed: e.confirmed
                   });
                 });
 
@@ -508,12 +569,13 @@ export const GroupDetails: React.FC = () => {
                   items.push({
                     id: r.id,
                     type: 'reimbursement',
-                    title: 'Payment recorded',
+                    title: t('paymentRecorded'),
                     amount: r.amount,
                     date: r.date,
                     payer: r.fromUser.fullName,
                     recipient: r.toUser.fullName,
-                    detail: `${r.fromUser.fullName} paid ${r.toUser.fullName} ${r.amount.toFixed(2)} MAD`
+                    detail: `${r.fromUser.fullName} ${t('paidUser')} ${r.toUser.fullName} ${r.amount.toFixed(2)} MAD`,
+                    confirmed: r.settled
                   });
                 });
 
@@ -534,8 +596,13 @@ export const GroupDetails: React.FC = () => {
                         {item.type === 'expense' ? item.title[0].toUpperCase() : 'S'}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-slate-800 dark:text-slate-200">{item.title}</span>
+                          {!item.confirmed && (
+                            <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                              {t('pendingConfirmation')}
+                            </span>
+                          )}
                           {item.receiptUrl && (
                             <a
                               href={item.receiptUrl}
@@ -573,6 +640,16 @@ export const GroupDetails: React.FC = () => {
                           title="Delete Expense"
                         >
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {item.type === 'reimbursement' && item.confirmed && (
+                        <button
+                          onClick={() => openReceiptModal(item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-slate-850 dark:hover:text-primary-400 transition-all cursor-pointer"
+                          title={t('receipt')}
+                        >
+                          <FileText className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -665,7 +742,7 @@ export const GroupDetails: React.FC = () => {
                   {t('paidBy')}
                 </label>
                 <select
-                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
+                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
                   value={expensePaidBy}
                   onChange={(e) => setExpensePaidBy(Number(e.target.value))}
                 >
@@ -679,7 +756,7 @@ export const GroupDetails: React.FC = () => {
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between items-center">
                   <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
-                    Split Method
+                    {t('splitMethod')}
                   </label>
                   <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800">
                     {(['EQUAL', 'EXACT', 'PERCENTAGE'] as SplitType[]).map((type) => (
@@ -706,7 +783,7 @@ export const GroupDetails: React.FC = () => {
                   {expenseSplitType === 'EQUAL' && (
                     <div className="space-y-2">
                       <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                        Select members sharing this cost (Previews: {equalPreviewShare} MAD each)
+                        {t('selectMembersCost')} (Previews: {equalPreviewShare} MAD each)
                       </div>
                       {group.members.map((m) => (
                         <label key={m.id} className="flex items-center gap-3 py-1.5 cursor-pointer">
@@ -725,18 +802,18 @@ export const GroupDetails: React.FC = () => {
                   {expenseSplitType === 'EXACT' && (
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                        <span>Input Exact Amounts Owed</span>
+                        <span>{t('inputExactAmounts')}</span>
                         <span className={exactRemaining === 0 ? 'text-emerald-500' : 'text-red-500 font-bold'}>
                           {exactRemaining === 0
-                            ? 'All settled!'
+                            ? t('allSettled')
                             : exactRemaining > 0
-                            ? `${exactRemaining.toFixed(2)} MAD remaining`
-                            : `${Math.abs(exactRemaining).toFixed(2)} MAD over total`}
+                            ? `${exactRemaining.toFixed(2)} MAD ${t('remaining')}`
+                            : `${Math.abs(exactRemaining).toFixed(2)} MAD ${t('overTotal')}`}
                         </span>
                       </div>
                       {group.members.map((m) => (
                         <div key={m.id} className="flex items-center justify-between gap-4">
-                          <span className="text-sm font-medium text-slate-750 dark:text-slate-300">{m.fullName}</span>
+                          <span className="text-sm font-medium text-slate-755 dark:text-slate-300">{m.fullName}</span>
                           <div className="relative w-32">
                             <input
                               type="number"
@@ -756,13 +833,13 @@ export const GroupDetails: React.FC = () => {
                   {expenseSplitType === 'PERCENTAGE' && (
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                        <span>Input percentage share (%)</span>
+                        <span>{t('inputPercentage')}</span>
                         <span className={percentRemaining === 0 ? 'text-emerald-500' : 'text-red-500 font-bold'}>
                           {percentRemaining === 0
-                            ? '100% split!'
+                            ? `100% ${t('settled')}`
                             : percentRemaining > 0
-                            ? `${percentRemaining.toFixed(1)}% remaining`
-                            : `${Math.abs(percentRemaining).toFixed(1)}% over total`}
+                            ? `${percentRemaining.toFixed(1)}% ${t('remaining')}`
+                            : `${Math.abs(percentRemaining).toFixed(1)}% ${t('overTotal')}`}
                         </span>
                       </div>
                       {group.members.map((m) => {
@@ -771,8 +848,8 @@ export const GroupDetails: React.FC = () => {
                         return (
                           <div key={m.id} className="flex items-center justify-between gap-4">
                             <div>
-                              <span className="text-sm font-medium text-slate-750 dark:text-slate-350">{m.fullName}</span>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">({calcShare} MAD)</span>
+                              <span className="text-sm font-medium text-slate-755 dark:text-slate-350">{m.fullName}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-550 block">({calcShare} MAD)</span>
                             </div>
                             <div className="relative w-24">
                               <input
@@ -858,15 +935,15 @@ export const GroupDetails: React.FC = () => {
 
             <form onSubmit={handleSettleUp} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-750 dark:text-slate-350 mb-1">
-                  Payer (From User)
+                <label className="block text-sm font-semibold text-slate-755 dark:text-slate-350 mb-1">
+                  {t('payerFromUser')}
                 </label>
                 <select
                   className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
                   value={settleFromUser}
                   onChange={(e) => setSettleFromUser(Number(e.target.value))}
                 >
-                  <option value={0}>Select Payer</option>
+                  <option value={0}>{t('selectPayer')}</option>
                   {group.members.map((m) => (
                     <option key={m.id} value={m.id}>{m.fullName}</option>
                   ))}
@@ -874,15 +951,15 @@ export const GroupDetails: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-750 dark:text-slate-350 mb-1">
-                  Recipient (To User)
+                <label className="block text-sm font-semibold text-slate-755 dark:text-slate-350 mb-1">
+                  {t('recipientToUser')}
                 </label>
                 <select
                   className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
                   value={settleToUser}
                   onChange={(e) => setSettleToUser(Number(e.target.value))}
                 >
-                  <option value={0}>Select Recipient</option>
+                  <option value={0}>{t('selectRecipient')}</option>
                   {group.members.map((m) => (
                     <option key={m.id} value={m.id}>{m.fullName}</option>
                   ))}
@@ -898,7 +975,7 @@ export const GroupDetails: React.FC = () => {
                   step="0.01"
                   required
                   placeholder="0.00"
-                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
+                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium text-sm"
                   value={settleAmount}
                   onChange={(e) => setSettleAmount(e.target.value)}
                 />
@@ -986,6 +1063,110 @@ export const GroupDetails: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Modal */}
+      {receiptModalOpen && selectedReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setReceiptModalOpen(false)} />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-sm w-full shadow-2xl relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-205">
+            
+            {/* Top Graphic Header */}
+            <div className="bg-gradient-to-br from-primary-600 to-emerald-500 p-6 text-center text-white relative">
+              <div className="absolute top-4 right-4">
+                <button 
+                  onClick={() => setReceiptModalOpen(false)}
+                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-extrabold text-lg uppercase tracking-wider">{t('reimbursementReceipt')}</h4>
+              <p className="text-white/80 text-xs mt-1">Watch Guard Secure Settlement</p>
+            </div>
+
+            {/* Receipt Body */}
+            <div className="p-6 space-y-6 relative bg-slate-50/50 dark:bg-slate-950/20">
+              
+              {/* Receipt Ticket Shape / Dashed Divider */}
+              <div className="border-b-2 border-dashed border-slate-200 dark:border-slate-800 pb-4 text-center">
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Receipt Number</span>
+                <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-350 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                  WR-{selectedReceipt.id}-{Math.floor(1000 + Math.random() * 9000)}
+                </span>
+              </div>
+
+              {/* Amount Display */}
+              <div className="text-center space-y-1">
+                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('amount')}</span>
+                <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {selectedReceipt.amount.toFixed(2)} <span className="text-lg font-bold text-slate-500">MAD</span>
+                </h3>
+              </div>
+
+              {/* Key Details Grid */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-sm text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400 dark:text-slate-550 font-medium">{t('groups')}</span>
+                  <span className="font-bold text-slate-755 dark:text-slate-200">{group?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 dark:text-slate-550 font-medium">{t('date')}</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {new Date(selectedReceipt.date).toLocaleDateString(language)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-slate-50 dark:border-slate-800/30 pt-2.5">
+                  <span className="text-slate-400 dark:text-slate-550 font-medium">{t('payerFromUser')}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{selectedReceipt.payer}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 dark:text-slate-550 font-medium">{t('recipientToUser')}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {selectedReceipt.recipient || selectedReceipt.recipientName || ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Decorative Tear-off Border simulation */}
+              <div className="flex justify-between gap-1 text-slate-200 dark:text-slate-800 overflow-hidden h-2 select-none">
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <div key={i} className="w-3 h-3 bg-white dark:bg-slate-900 rounded-full -mt-2 shrink-0 border border-slate-250 dark:border-slate-800" />
+                ))}
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800/50 flex gap-2">
+              <button
+                onClick={handleDownloadReceipt}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-850 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {t('download')}
+              </button>
+              <button
+                onClick={handleShareReceipt}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary-600 to-primary-550 hover:from-primary-700 hover:to-primary-600 text-white font-bold text-xs shadow-md shadow-primary-600/10 hover:shadow-primary-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {shareCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    {t('copiedToClipboard')}
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5" />
+                    {t('shareReceipt')}
+                  </>
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
       )}

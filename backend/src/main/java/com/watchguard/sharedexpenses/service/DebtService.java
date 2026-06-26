@@ -73,6 +73,7 @@ public class DebtService {
 
         // 1. Process Expenses and Splits
         for (Expense expense : expenses) {
+            if (!expense.isConfirmed()) continue;
             totalExpenses = totalExpenses.add(expense.getAmount());
             if (expense.getPaidBy().getId().equals(currentUserId)) {
                 youPaid = youPaid.add(expense.getAmount());
@@ -95,6 +96,7 @@ public class DebtService {
 
         // 2. Process Reimbursements/Settlements
         for (Reimbursement r : reimbursements) {
+            if (!r.isSettled()) continue;
             Long fromId = r.getFromUser().getId();
             Long toId = r.getToUser().getId();
 

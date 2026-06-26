@@ -6,6 +6,8 @@ export interface Notification {
   type: 'EXPENSE_ADDED' | 'REPAYMENT_ADDED' | 'REPAYMENT_REMINDER' | 'SETTLEMENT_CONFIRMATION';
   read: boolean;
   createdAt: string;
+  targetId?: number;
+  targetType?: 'EXPENSE' | 'REIMBURSEMENT';
 }
 
 const notificationService = {

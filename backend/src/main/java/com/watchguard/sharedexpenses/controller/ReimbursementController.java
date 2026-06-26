@@ -43,4 +43,22 @@ public class ReimbursementController {
         List<Reimbursement> reimbursements = reimbursementService.getGroupReimbursements(groupId, user);
         return ResponseEntity.ok(reimbursements);
     }
+
+    @PostMapping("/reimbursements/{id}/confirm")
+    public ResponseEntity<Reimbursement> confirmReimbursement(@PathVariable Long id) {
+        User user = getAuthenticatedUser();
+        Reimbursement reimbursement = reimbursementService.confirmReimbursement(id, user);
+        return ResponseEntity.ok(reimbursement);
+    }
+
+    @PostMapping("/reimbursements/{id}/reject")
+    public ResponseEntity<?> rejectReimbursement(@PathVariable Long id) {
+        try {
+            User user = getAuthenticatedUser();
+            reimbursementService.rejectReimbursement(id, user);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

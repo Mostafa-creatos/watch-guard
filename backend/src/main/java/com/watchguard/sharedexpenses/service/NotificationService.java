@@ -25,11 +25,18 @@ public class NotificationService {
 
     @Transactional
     public void createNotification(User user, String message, NotificationType type) {
+        createNotification(user, message, type, null, null);
+    }
+
+    @Transactional
+    public void createNotification(User user, String message, NotificationType type, Long targetId, String targetType) {
         Notification notification = Notification.builder()
                 .user(user)
                 .message(message)
                 .type(type)
                 .read(false)
+                .targetId(targetId)
+                .targetType(targetType)
                 .build();
         notificationRepository.save(notification);
     }

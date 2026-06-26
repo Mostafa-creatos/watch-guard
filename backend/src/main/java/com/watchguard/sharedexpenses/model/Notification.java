@@ -28,6 +28,12 @@ public class Notification {
     @Column(nullable = false)
     private NotificationType type;
 
+    @Column(name = "target_id")
+    private Long targetId;
+
+    @Column(name = "target_type")
+    private String targetType;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private boolean read = false;
